@@ -1,0 +1,899 @@
+<title>Mi Patrimonio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: franja oscura con el patrimonio neto, cuatro tarjetas por entidad con su logo (BCP, Interbank, efectivo, deuda), análisis con dona y un panel de copias de seguridad. */
+  :root {
+    --bg: #f3f4f1;
+    --surface: #ffffff;
+    --surface-2: #eceee9;
+    --fg: #16202e;
+    --muted: #5d6877;
+    --line: #dcdfd8;
+    --hero-bg: #14213d;
+    --hero-fg: #f4f6fb;
+    --hero-muted: #a9b4cc;
+    --hero-neg: #ff9b92;
+    --bcp: #0b4fa8;
+    --bcp-accent: #ff7a00;
+    --ibk: #0a7d3f;
+    --cash: #8a5a00;
+    --debt: #b3261e;
+    --on-band: #ffffff;
+    --badge-bg: #ffffff;
+    --focus: #ff7a00;
+    --shadow: 0 14px 30px rgba(20, 33, 61, 0.14);
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f141c;
+      --surface: #171e29;
+      --surface-2: #1f2835;
+      --fg: #eaeef5;
+      --muted: #9aa6b8;
+      --line: #2b3646;
+      --hero-bg: #1a2744;
+      --bcp: #2f6fd0;
+      --ibk: #138a4c;
+      --cash: #a8700a;
+      --debt: #cf4037;
+      --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f141c;
+    --surface: #171e29;
+    --surface-2: #1f2835;
+    --fg: #eaeef5;
+    --muted: #9aa6b8;
+    --line: #2b3646;
+    --hero-bg: #1a2744;
+    --bcp: #2f6fd0;
+    --ibk: #138a4c;
+    --cash: #a8700a;
+    --debt: #cf4037;
+    --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 40px;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  h1, h2, h3, p { margin: 0; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+  button:active { transform: scale(0.95); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+  [data-bind] { display: inline-block; }
+
+  /* ---------- Animaciones ---------- */
+  @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(1); } 30% { transform: scale(1.07); filter: brightness(1.3); } 100% { transform: none; filter: none; } }
+  @keyframes drift { to { transform: translate(-70px, 44px) scale(1.18); } }
+  @keyframes sheen { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+  @keyframes stripes { to { background-position: 22.6px 0; } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes slidein { from { opacity: 0; transform: translateX(-14px) scaleY(0.8); } to { opacity: 1; transform: none; } }
+  @keyframes slideout { to { opacity: 0; transform: translateX(14px) scaleY(0.6); } }
+  @keyframes ring { from { transform: scale(0.8); opacity: 0.8; } to { transform: scale(1.6); opacity: 0; } }
+  .intro .reveal { animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--d, 0) * 90ms); }
+  .flash { animation: pop 0.55s ease; }
+
+  /* ---------- Logos ---------- */
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    background: var(--badge-bg); border-radius: 12px; padding: 7px 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  }
+  .badge svg, .badge img { display: block; }
+  .badge img { max-width: 150px; object-fit: contain; }
+  .badge.sm { padding: 3px 8px; border-radius: 8px; box-shadow: none; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden; isolation: isolate;
+    background: var(--hero-bg);
+    color: var(--hero-fg);
+    border-radius: 22px;
+    padding: clamp(20px, 4vw, 36px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px 32px;
+    align-items: end;
+  }
+  .hero::before, .hero::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(55px); opacity: 0.45; z-index: -1;
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .hero::before { width: 340px; height: 340px; background: #2f6fd0; top: -140px; right: 6%; }
+  .hero::after { width: 300px; height: 300px; background: #13a35c; bottom: -170px; left: 32%; animation-duration: 19s; animation-direction: alternate-reverse; }
+  .hero-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hero-muted); font-weight: 600; }
+  .hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 3vw, 26px); letter-spacing: -0.01em; }
+  .net {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(38px, 8.5vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin-top: 6px;
+    overflow-wrap: anywhere;
+  }
+  .net.neg { color: var(--hero-neg); }
+  .net-alt { color: var(--hero-muted); font-size: 16px; }
+  .net-alt strong { color: var(--hero-fg); font-weight: 600; }
+  .compose { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+  .bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.12); gap: 2px; }
+  .bar span { position: relative; overflow: hidden; display: block; height: 100%; min-width: 0; transition: flex-grow 0.7s cubic-bezier(0.3, 0.7, 0.2, 1); }
+  .bar span::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: translateX(-120%); animation: sheen 4s ease-in-out infinite;
+  }
+  .bar span:nth-child(2)::after { animation-delay: 0.4s; }
+  .bar span:nth-child(3)::after { animation-delay: 0.8s; }
+  .bar-legend { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+  .c-bcp { background: #4b8bea; }
+  .c-ibk { background: #2fbf75; }
+  .c-cash { background: #e0a526; }
+
+  .fx {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+    backdrop-filter: blur(6px);
+  }
+  .fx label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hero-muted); font-weight: 600; }
+  .fx-box { display: flex; align-items: baseline; gap: 8px; }
+  .fx-box span { color: var(--hero-muted); }
+  .fx input {
+    width: 100%; min-width: 0;
+    background: transparent; border: 0; border-bottom: 2px solid rgba(255,255,255,0.35);
+    color: var(--hero-fg); font-family: var(--font-display); font-weight: 700; font-size: 28px; padding: 0 0 2px;
+    font-variant-numeric: tabular-nums; transition: border-color 0.2s ease;
+  }
+  .fx input:focus-visible { outline: none; border-bottom-color: var(--focus); }
+  .fx small { color: var(--hero-muted); font-size: 12px; }
+
+  /* ---------- Aviso ---------- */
+  .notice {
+    display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px dashed var(--bcp-accent); border-radius: 14px; padding: 12px 16px;
+  }
+  .notice p { min-width: 0; flex: 1 1 260px; }
+  .notice strong { font-weight: 700; }
+
+  /* ---------- Resumen ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+    display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .stat .k { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .stat .v { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3.2vw, 28px); letter-spacing: -0.02em; overflow-wrap: anywhere; align-self: flex-start; }
+  .stat .h { font-size: 13px; color: var(--muted); }
+  .stat.debt .v { color: var(--debt); }
+
+  /* ---------- Tarjetas ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; min-width: 0;
+    display: flex; flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; padding: 16px 18px; color: var(--on-band); }
+  .card.bcp .card-head { background: var(--bcp); border-bottom: 4px solid var(--bcp-accent); }
+  .card.ibk .card-head { background: var(--ibk); }
+  .card.cash .card-head { background: var(--cash); }
+  .card.debt .card-head { background: var(--debt); }
+  .head-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 240px; }
+  .card .badge { animation: bob 5s ease-in-out infinite; transition: transform 0.3s ease; }
+  .card.ibk .badge { animation-delay: -1.2s; }
+  .card.cash .badge { animation-delay: -2.4s; }
+  .card.debt .badge { animation-delay: -3.6s; }
+  .card:hover .badge { animation-play-state: paused; transform: rotate(-3deg) scale(1.05); }
+  .titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .card-head h2 { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+  .card-head p { font-size: 13px; opacity: 0.9; }
+  .logo-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
+  .logo-actions button {
+    background: transparent; border: 0; padding: 0; color: var(--on-band); opacity: 0.78; font-size: 12px;
+    text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+  }
+  .logo-actions button:hover { opacity: 1; }
+  .card-total { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+  .card-total span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; }
+  .card-total strong { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 0; }
+  .col { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .col + .col { border-left: 1px solid var(--line); }
+  @media (max-width: 560px) { .col + .col { border-left: 0; border-top: 1px solid var(--line); } }
+  .col-head { display: flex; align-items: center; gap: 8px; }
+  .col-head h3 { font-size: 14px; font-weight: 600; }
+  .cur { display: inline-grid; place-items: center; min-width: 32px; height: 24px; padding: 0 6px; border-radius: 6px; font-size: 12px; font-weight: 700; background: var(--surface-2); }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; transform-origin: top left; }
+  .row.new { animation: slidein 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .row.out { animation: slideout 0.22s ease forwards; }
+  .nm {
+    flex: 1 1 100%; min-width: 0;
+    background: transparent; border: 0; padding: 0 2px; font-size: 13px; color: var(--muted);
+    transition: color 0.2s ease;
+  }
+  .nm:hover, .nm:focus-visible { color: var(--fg); }
+  .amt {
+    flex: 1 1 0; min-width: 0;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface-2); border: 1px solid transparent; border-radius: 10px; padding: 8px 10px;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
+  }
+  .amt:hover { border-color: var(--line); }
+  .amt:focus-within { border-color: var(--bcp-accent); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.18); }
+  .amt span { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .amt input {
+    flex: 1; width: 100%; min-width: 0; background: transparent; border: 0; outline: none;
+    font-family: var(--font-display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; text-align: right;
+  }
+  .amt input::placeholder { color: var(--muted); opacity: 0.55; }
+  .x {
+    flex: 0 0 auto; width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1;
+  }
+  .x:hover { background: var(--surface-2); color: var(--debt); transform: rotate(90deg); }
+  .add {
+    align-self: flex-start; background: transparent; border: 1px dashed var(--line); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer;
+  }
+  .add:hover { border-color: var(--fg); color: var(--fg); transform: translateY(-1px); }
+  .sub { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .sub span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .sub strong { font-family: var(--font-display); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .card.debt .sub strong { color: var(--debt); }
+
+  /* ---------- Análisis ---------- */
+  .analysis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .panel h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .donut-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+  .donut { position: relative; width: 190px; height: 190px; flex: 0 0 auto; }
+  .donut svg { width: 100%; height: 100%; display: block; }
+  .seg { fill: none; stroke-width: 16; transition: stroke-dasharray 0.9s cubic-bezier(0.3, 0.7, 0.2, 1), stroke-dashoffset 0.9s cubic-bezier(0.3, 0.7, 0.2, 1); }
+  .donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; padding: 40px; }
+  .donut-center span { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .donut-center strong { font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
+  .legend { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 12px; list-style: none; padding: 0; margin: 0; }
+  .legend li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+  .legend .badge { justify-self: start; box-shadow: 0 0 0 1px var(--line); }
+  .legend .pct { color: var(--muted); font-size: 13px; }
+  .legend .amount { grid-column: 1 / 3; font-family: var(--font-display); font-weight: 700; font-size: 17px; justify-self: start; }
+  .meter { height: 18px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .meter span {
+    display: block; height: 100%; width: 0; border-radius: 999px; transition: width 0.8s cubic-bezier(0.3, 0.7, 0.2, 1);
+    background-color: var(--debt);
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.22) 0 8px, transparent 8px 16px);
+    background-size: 22.6px 22.6px; animation: stripes 1s linear infinite;
+  }
+  .meter-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .meter-row strong { color: var(--fg); }
+  .formula { display: grid; gap: 6px; font-size: 14px; }
+  .formula div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .formula div:last-child { border-bottom: 0; font-weight: 700; font-size: 16px; }
+  .formula b { font-family: var(--font-display); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+
+  /* ---------- Copia de seguridad ---------- */
+  .backup { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .backup-head { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+  .shield { position: relative; width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--hero-bg); color: #fff; }
+  .shield::after { content: ""; position: absolute; inset: 0; border-radius: 14px; border: 2px solid var(--bcp-accent); animation: ring 2.8s ease-out infinite; }
+  .backup-head > div { flex: 1 1 260px; min-width: 0; }
+  .backup h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .backup-head p, .last { color: var(--muted); font-size: 14px; }
+  .bk-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .bk-paste { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .bk-paste summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .bk-paste[open] { display: flex; flex-direction: column; gap: 10px; }
+  .bk-paste textarea {
+    width: 100%; min-height: 110px; resize: vertical; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px;
+  }
+  .bk-paste .btn { align-self: flex-start; }
+  .bk-local { display: flex; flex-direction: column; gap: 10px; }
+  .bk-local-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
+  .bk-local h3 { font-size: 15px; font-weight: 700; }
+  .bk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bk-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; animation: slidein 0.35s ease; }
+  .bk-list .meta { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; }
+  .bk-list .meta strong { font-size: 14px; }
+  .bk-list .meta span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .bk-empty { color: var(--muted); font-size: 14px; padding: 6px 2px; }
+  .mini { background: transparent; border: 1px solid var(--line); color: var(--fg); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+  .mini:hover { border-color: var(--fg); }
+  .mini.danger:hover { border-color: var(--debt); color: var(--debt); }
+
+  /* ---------- Botones y pie ---------- */
+  .btn { background: var(--fg); color: var(--bg); border: 0; border-radius: 999px; padding: 9px 18px; font-weight: 600; cursor: pointer; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: scale(0.95); }
+  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); font-weight: 500; }
+  .btn.ghost:hover { border-color: var(--fg); }
+  footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; align-items: center; color: var(--muted); font-size: 13px; }
+  footer p { flex: 1 1 280px; min-width: 0; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 10;
+    transform: translate(-50%, 24px); opacity: 0; pointer-events: none;
+    background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 14px; font-size: 14px; font-weight: 500; text-align: center;
+    max-width: calc(100vw - 32px); transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 640px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .fx { min-width: 0; }
+    .card-total { text-align: left; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="logo-bcp" viewBox="0 0 96 40">
+    <rect x="2" y="5" width="9" height="30" rx="2" fill="#ff7a00"/>
+    <rect x="13" y="5" width="5" height="30" rx="2" fill="#ff7a00" opacity="0.55"/>
+    <text x="24" y="32" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="31" fill="#0b4fa8" textLength="68" lengthAdjust="spacingAndGlyphs">BCP</text>
+  </symbol>
+  <symbol id="logo-ibk" viewBox="0 0 165 40">
+    <circle cx="20" cy="20" r="17" fill="#00a443"/>
+    <circle cx="20" cy="12.5" r="3.2" fill="#fff"/>
+    <rect x="17.2" y="18" width="5.6" height="12" rx="2.4" fill="#fff"/>
+    <text x="44" y="29" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="700" font-size="25" fill="#0a7d3f" textLength="115" lengthAdjust="spacingAndGlyphs">interbank</text>
+  </symbol>
+  <symbol id="logo-cash" viewBox="0 0 130 40">
+    <rect x="2" y="9" width="30" height="22" rx="4" fill="none" stroke="#8a5a00" stroke-width="2.6"/>
+    <circle cx="17" cy="20" r="5.5" fill="none" stroke="#8a5a00" stroke-width="2.6"/>
+    <circle cx="7.5" cy="20" r="1.6" fill="#8a5a00"/><circle cx="26.5" cy="20" r="1.6" fill="#8a5a00"/>
+    <text x="40" y="28" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="22" fill="#8a5a00" textLength="86" lengthAdjust="spacingAndGlyphs">Efectivo</text>
+  </symbol>
+  <symbol id="logo-debt" viewBox="0 0 140 40">
+    <rect x="2" y="8" width="30" height="24" rx="4" fill="none" stroke="#b3261e" stroke-width="2.6"/>
+    <rect x="2" y="14" width="30" height="6" fill="#b3261e"/>
+    <rect x="7" y="25" width="7" height="4" rx="1" fill="#b3261e"/>
+    <text x="40" y="28" font-family="'Bricolage Grotesque','Arial Black',sans-serif" font-weight="800" font-size="22" fill="#b3261e" textLength="96" lengthAdjust="spacingAndGlyphs">Tarjeta IO</text>
+  </symbol>
+</svg>
+
+<main class="wrap">
+  <section class="hero reveal" style="--d:0" aria-label="Patrimonio neto">
+    <div class="hero-main">
+      <span class="eyebrow">Mis finanzas · Perú</span>
+      <h1>Patrimonio neto</h1>
+      <div class="net num" id="net" data-bind="net">S/ 0.00</div>
+      <p class="net-alt num" id="net-alt"></p>
+      <div class="compose">
+        <div class="bar" id="bar" role="img" aria-label="Distribución de activos por entidad"></div>
+        <div class="bar-legend">
+          <span class="badge sm" data-logo="bcp" data-h="18"></span>
+          <span class="badge sm" data-logo="ibk" data-h="18"></span>
+          <span class="badge sm" data-logo="cash" data-h="18"></span>
+        </div>
+      </div>
+    </div>
+    <div class="fx">
+      <label for="tc">Tipo de cambio</label>
+      <div class="fx-box"><span>S/</span><input id="tc" type="text" inputmode="decimal" autocomplete="off" aria-label="Soles por cada dólar"></div>
+      <small>soles por US$ 1. Cámbialo al valor de hoy.</small>
+    </div>
+  </section>
+
+  <div class="notice reveal" style="--d:1" id="notice" hidden>
+    <p><strong>Estos montos son de ejemplo.</strong> Edita cualquier campo o empieza con todo en cero.</p>
+    <button class="btn" id="start-zero" type="button">Empezar con mis datos</button>
+  </div>
+
+  <section class="stats" aria-label="Resumen">
+    <div class="stat reveal" style="--d:2"><span class="k">Activos en soles</span><span class="v num" data-bind="a-pen"></span><span class="h">BCP + Interbank + efectivo</span></div>
+    <div class="stat reveal" style="--d:3"><span class="k">Activos en dólares</span><span class="v num" data-bind="a-usd"></span><span class="h">BCP + Interbank + efectivo</span></div>
+    <div class="stat reveal" style="--d:4"><span class="k">Total de activos</span><span class="v num" data-bind="a-eq"></span><span class="h">Todo expresado en soles</span></div>
+    <div class="stat debt reveal" style="--d:5"><span class="k">Deuda tarjeta IO</span><span class="v num" data-bind="d-eq"></span><span class="h" id="d-detail"></span></div>
+  </section>
+
+  <section class="cards" id="cards" aria-label="Cuentas y deudas"></section>
+
+  <section class="analysis">
+    <div class="panel reveal" style="--d:10">
+      <h2>Dónde está tu dinero</h2>
+      <div class="donut-row">
+        <div class="donut">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="var(--surface-2)" stroke-width="16"></circle>
+            <g transform="rotate(-90 60 60)" id="donut-segs"></g>
+          </svg>
+          <div class="donut-center"><span>Activos</span><strong class="num" data-bind="a-eq"></strong></div>
+        </div>
+        <ul class="legend" id="legend"></ul>
+      </div>
+    </div>
+    <div class="panel reveal" style="--d:11">
+      <h2>Cuánto debes frente a lo que tienes</h2>
+      <div class="meter" role="img" id="meter-box" aria-label="Deuda sobre activos"><span id="meter"></span></div>
+      <div class="meter-row"><span id="meter-text"></span><strong class="num" id="meter-pct"></strong></div>
+      <div class="formula num">
+        <div><span>Total de activos</span><b data-bind="a-eq"></b></div>
+        <div><span>− Deuda tarjeta IO</span><b data-bind="d-eq"></b></div>
+        <div><span>Patrimonio neto</span><b data-bind="net"></b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="backup reveal" style="--d:12" aria-labelledby="bk-title">
+    <div class="backup-head">
+      <span class="shield" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg>
+      </span>
+      <div>
+        <h2 id="bk-title">Copia de seguridad</h2>
+        <p>Guarda tus montos y logos en un archivo de tu equipo, o restáuralos cuando quieras. Nada se envía a internet.</p>
+      </div>
+      <span class="last num" id="bk-last"></span>
+    </div>
+    <div class="bk-actions">
+      <button class="btn" id="bk-save" type="button">Guardar copia en un archivo</button>
+      <button class="btn ghost" id="bk-copy" type="button">Copiar copia</button>
+      <button class="btn ghost" id="bk-open" type="button">Restaurar desde archivo</button>
+      <input type="file" id="bk-file" accept=".json,application/json" hidden>
+    </div>
+    <details class="bk-paste" id="bk-paste">
+      <summary>Restaurar pegando el texto de una copia</summary>
+      <textarea id="bk-text" spellcheck="false" placeholder="Pega aquí el contenido de tu copia"></textarea>
+      <button class="btn ghost" id="bk-paste-go" type="button">Restaurar este texto</button>
+    </details>
+    <div class="bk-local">
+      <div class="bk-local-head">
+        <h3>Copias en este navegador</h3>
+        <button class="btn ghost" id="bk-snap" type="button">Crear copia ahora</button>
+      </div>
+      <ul class="bk-list" id="bk-list"></ul>
+    </div>
+  </section>
+
+  <footer class="reveal" style="--d:13">
+    <p>Los montos se guardan solo en este navegador. Los dólares se pasan a soles con el tipo de cambio de arriba. Los logos son versiones simples: puedes poner el oficial con "Cambiar logo".</p>
+    <button class="btn ghost" id="reset" type="button">Poner todo en cero</button>
+  </footer>
+</main>
+
+<input type="file" id="logo-file" accept="image/*" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var KEY = 'economia-finanzas-v1';
+  var SNAPKEY = 'economia-copias-v1';
+  var GROUPS = [
+    { id: 'bcp',  name: 'BCP',                sub: 'Banco de Crédito del Perú',  kind: 'asset', lead: 'Cuentas en ' },
+    { id: 'ibk',  name: 'Interbank',          sub: 'Cuentas en Interbank',       kind: 'asset', lead: 'Cuentas en ' },
+    { id: 'cash', name: 'Dinero físico',      sub: 'Efectivo en mano o en casa', kind: 'asset', lead: 'Efectivo en ' },
+    { id: 'debt', name: 'Deuda · Tarjeta IO', sub: 'Saldo por pagar',            kind: 'debt',  lead: 'Deuda en ' }
+  ];
+  var CUR = { pen: { label: 'soles', sym: 'S/' }, usd: { label: 'dólares', sym: 'US$' } };
+  var LOGO_DIMS = { bcp: [96, 40], ibk: [165, 40], cash: [130, 40], debt: [140, 40] };
+  var ASSETS = ['bcp', 'ibk', 'cash'];
+  var COLORS_VAR = { bcp: 'var(--bcp)', ibk: 'var(--ibk)', cash: 'var(--cash)' };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function example() {
+    return {
+      tc: '3.75', example: true, logos: {}, lastBackup: null,
+      data: {
+        bcp:  { pen: [{ n: 'Cuenta de ahorros', v: 4850.3 }, { n: 'Cuenta sueldo', v: 2120 }], usd: [{ n: 'Ahorro en dólares', v: 1250 }] },
+        ibk:  { pen: [{ n: 'Ahorro Interbank', v: 3600.5 }], usd: [{ n: 'Cuenta en dólares', v: 820 }] },
+        cash: { pen: [{ n: 'Billetera', v: 380 }], usd: [{ n: 'Dólares guardados', v: 150 }] },
+        debt: { pen: [{ n: 'Tarjeta IO', v: 1745.9 }], usd: [{ n: 'Consumos en dólares', v: 120 }] }
+      }
+    };
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var o = JSON.parse(raw); if (o && o.data && o.data.bcp) { o.logos = o.logos || {}; return o; } }
+    } catch (e) {}
+    return example();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  var S = load();
+
+  function num(x) {
+    var n = parseFloat(String(x == null ? '' : x).replace(/,/g, '').replace(/[^0-9.\-]/g, ''));
+    return isFinite(n) ? n : 0;
+  }
+  function fmt(n, c) {
+    var s = Math.abs(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (n < 0 ? '−' : '') + CUR[c].sym + ' ' + s;
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function $(sel) { return document.querySelector(sel); }
+  function group(id) { return GROUPS.filter(function (x) { return x.id === id; })[0]; }
+
+  /* ---------- Avisos ---------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 3800);
+  }
+
+  /* ---------- Números animados ---------- */
+  var shown = {};
+  function setNum(key, to, cur) {
+    var had = shown[key] !== undefined, start = had ? shown[key] : 0;
+    document.querySelectorAll('[data-bind="' + key + '"]').forEach(function (el) {
+      cancelAnimationFrame(el._raf);
+      var from = el._cur !== undefined ? el._cur : start;
+      if (reduce || from === to) { el._cur = to; el.textContent = fmt(to, cur); return; }
+      if (had) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+      var t0 = performance.now(), dur = had ? 600 : 1100;
+      (function step(t) {
+        var p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+        el._cur = from + (to - from) * e;
+        el.textContent = fmt(el._cur, cur);
+        if (p < 1) el._raf = requestAnimationFrame(step); else el._cur = to;
+      })(t0);
+    });
+    shown[key] = to;
+  }
+
+  /* ---------- Logos ---------- */
+  function logoMarkup(id, h) {
+    var name = group(id).name;
+    if (S.logos[id]) return '<img src="' + S.logos[id] + '" alt="Logo de ' + esc(name) + '" style="height:' + h + 'px">';
+    var d = LOGO_DIMS[id], w = Math.round(d[0] * h / d[1]);
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + d[0] + ' ' + d[1] + '" role="img" aria-label="Logo de ' + esc(name) + '"><use href="#logo-' + id + '"></use></svg>';
+  }
+  function paintLogos() {
+    document.querySelectorAll('[data-logo]').forEach(function (el) {
+      el.innerHTML = logoMarkup(el.dataset.logo, +el.dataset.h);
+    });
+  }
+
+  /* ---------- Tarjetas ---------- */
+  function rowHTML(g, c, i, r) {
+    var base = g.id + '-' + c + '-' + i;
+    var attrs = ' data-g="' + g.id + '" data-c="' + c + '" data-i="' + i + '"';
+    return '<div class="row">' +
+      '<input class="nm" id="' + base + '-n" type="text" value="' + esc(r.n) + '" placeholder="Nombre de la cuenta" aria-label="Nombre"' + attrs + ' data-f="n">' +
+      '<label class="amt"><span>' + CUR[c].sym + '</span>' +
+      '<input id="' + base + '-v" type="text" inputmode="decimal" autocomplete="off" value="' + (num(r.v) ? num(r.v).toFixed(2) : '') + '" placeholder="0.00" aria-label="Monto en ' + CUR[c].label + '"' + attrs + ' data-f="v"></label>' +
+      '<button class="x" type="button" aria-label="Quitar esta fila" data-act="del"' + attrs + '>×</button>' +
+      '</div>';
+  }
+  function colHTML(g, c) {
+    var rows = S.data[g.id][c].map(function (r, i) { return rowHTML(g, c, i, r); }).join('');
+    return '<div class="col">' +
+      '<div class="col-head"><span class="cur">' + CUR[c].sym + '</span><h3>' + g.lead + CUR[c].label + '</h3></div>' +
+      '<div class="rows">' + rows + '</div>' +
+      '<button class="add" type="button" data-act="add" data-g="' + g.id + '" data-c="' + c + '">+ Agregar</button>' +
+      '<div class="sub"><span>Subtotal</span><strong data-bind="sub-' + g.id + '-' + c + '"></strong></div>' +
+      '</div>';
+  }
+  function renderCards(focusId) {
+    $('#cards').innerHTML = GROUPS.map(function (g, idx) {
+      var custom = !!S.logos[g.id];
+      return '<article class="card reveal ' + g.id + '" style="--d:' + (6 + idx) + '">' +
+        '<header class="card-head"><div class="head-left">' +
+        '<span class="badge" data-logo="' + g.id + '" data-h="32"></span>' +
+        '<div class="titles"><h2>' + g.name + '</h2><p>' + g.sub + '</p>' +
+        '<div class="logo-actions"><button type="button" data-act="logo" data-g="' + g.id + '">Cambiar logo</button>' +
+        (custom ? '<button type="button" data-act="logo-reset" data-g="' + g.id + '">Logo original</button>' : '') + '</div></div></div>' +
+        '<div class="card-total"><span>Equivale a</span><strong class="num" data-bind="eq-' + g.id + '"></strong></div></header>' +
+        '<div class="cols">' + colHTML(g, 'pen') + colHTML(g, 'usd') + '</div></article>';
+    }).join('');
+    paintLogos();
+    if (focusId) {
+      var el = document.getElementById(focusId);
+      if (el) { el.focus(); if (el.parentNode) el.parentNode.classList.add('new'); }
+    }
+    updateTotals();
+  }
+
+  /* ---------- Partes fijas: barra, dona y leyenda ---------- */
+  var R = 48, CIRC = 2 * Math.PI * R;
+  function buildStatic() {
+    var bar = $('#bar');
+    ASSETS.forEach(function (id) {
+      var s = document.createElement('span'); s.className = 'c-' + id; s.dataset.id = id; s.style.flexBasis = '0'; bar.appendChild(s);
+    });
+    var segs = '', leg = '';
+    ASSETS.forEach(function (id) {
+      segs += '<circle class="seg" data-id="' + id + '" cx="60" cy="60" r="' + R + '" stroke="' + COLORS_VAR[id] + '" style="stroke-dasharray:0 ' + CIRC.toFixed(2) + ';stroke-dashoffset:0"></circle>';
+      leg += '<li><span class="badge sm" data-logo="' + id + '" data-h="20"></span><span class="pct num" data-pct="' + id + '"></span>' +
+        '<span class="amount num" data-bind="leg-' + id + '"></span></li>';
+    });
+    $('#donut-segs').innerHTML = segs;
+    $('#legend').innerHTML = leg;
+    paintLogos();
+  }
+
+  /* ---------- Cálculos ---------- */
+  function sumList(list) { return list.reduce(function (a, r) { return a + num(r.v); }, 0); }
+  function totalsOf(st) {
+    var tc = Math.max(num(st.tc), 0), t = {}, aPen = 0, aUsd = 0, aEq = 0;
+    GROUPS.forEach(function (g) {
+      var p = sumList(st.data[g.id].pen), u = sumList(st.data[g.id].usd);
+      t[g.id] = { pen: p, usd: u, eq: p + u * tc };
+      if (g.kind === 'asset') { aPen += p; aUsd += u; aEq += t[g.id].eq; }
+    });
+    return { tc: tc, t: t, aPen: aPen, aUsd: aUsd, aEq: aEq, debtEq: t.debt.eq, netEq: aEq - t.debt.eq };
+  }
+  function updateTotals() {
+    var r = totalsOf(S), tc = r.tc, t = r.t;
+    GROUPS.forEach(function (g) {
+      setNum('sub-' + g.id + '-pen', t[g.id].pen, 'pen');
+      setNum('sub-' + g.id + '-usd', t[g.id].usd, 'usd');
+      setNum('eq-' + g.id, t[g.id].eq, 'pen');
+    });
+    var netPen = r.aPen - t.debt.pen, netUsd = r.aUsd - t.debt.usd;
+    var netInUsd = tc > 0 ? netUsd + netPen / tc : null;
+
+    setNum('net', r.netEq, 'pen');
+    $('#net').classList.toggle('neg', r.netEq < 0);
+    $('#net-alt').innerHTML = netInUsd === null
+      ? 'Escribe un tipo de cambio para ver el equivalente en dólares.'
+      : 'Equivale a <strong>' + fmt(netInUsd, 'usd') + '</strong> al cambio de S/ ' + tc.toFixed(3).replace(/0$/, '');
+
+    setNum('a-pen', r.aPen, 'pen');
+    setNum('a-usd', r.aUsd, 'usd');
+    setNum('a-eq', r.aEq, 'pen');
+    setNum('d-eq', r.debtEq, 'pen');
+    $('#d-detail').textContent = fmt(t.debt.pen, 'pen') + ' + ' + fmt(t.debt.usd, 'usd');
+
+    /* barra de composición, dona y leyenda */
+    var off = 0;
+    ASSETS.forEach(function (id) {
+      var v = Math.max(t[id].eq, 0), share = r.aEq > 0 ? v / r.aEq : 0, len = share * CIRC;
+      var bs = $('#bar span[data-id="' + id + '"]'); if (bs) bs.style.flexGrow = r.aEq > 0 ? v : 0;
+      var seg = $('.seg[data-id="' + id + '"]');
+      if (seg) {
+        var vis = len > 1 ? Math.max(len - 1, 0.1) : 0;
+        seg.style.strokeDasharray = vis.toFixed(2) + ' ' + (CIRC - vis).toFixed(2);
+        seg.style.strokeDashoffset = (-off).toFixed(2);
+      }
+      off += len;
+      var pct = $('[data-pct="' + id + '"]'); if (pct) pct.textContent = (share * 100).toFixed(1) + '%';
+      setNum('leg-' + id, t[id].eq, 'pen');
+    });
+
+    /* medidor de deuda */
+    var ratio = r.aEq > 0 ? r.debtEq / r.aEq : (r.debtEq > 0 ? 1 : 0);
+    $('#meter').style.width = Math.min(ratio * 100, 100).toFixed(1) + '%';
+    $('#meter-pct').textContent = (ratio * 100).toFixed(1) + '%';
+    $('#meter-text').textContent = r.debtEq > r.aEq ? 'Tu deuda es mayor que tus activos.' : 'Parte de tus activos que equivale a la deuda.';
+    $('#meter-box').setAttribute('aria-label', 'Deuda: ' + (ratio * 100).toFixed(1) + '% de tus activos');
+
+    $('#notice').hidden = !S.example;
+  }
+
+  /* ---------- Eventos de las tarjetas ---------- */
+  var cards = $('#cards'), logoTarget = null;
+  cards.addEventListener('input', function (e) {
+    var el = e.target, g = el.dataset.g;
+    if (!g) return;
+    var row = S.data[g][el.dataset.c][+el.dataset.i];
+    if (!row) return;
+    if (el.dataset.f === 'n') row.n = el.value; else row.v = num(el.value);
+    save();
+    if (el.dataset.f === 'v') updateTotals();
+  });
+  cards.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var act = b.dataset.act;
+    if (act === 'logo') { logoTarget = b.dataset.g; $('#logo-file').value = ''; $('#logo-file').click(); return; }
+    if (act === 'logo-reset') { delete S.logos[b.dataset.g]; save(); renderCards(); toast('Volvió el logo original.'); return; }
+    var list = S.data[b.dataset.g][b.dataset.c];
+    if (act === 'add') {
+      list.push({ n: '', v: 0 });
+      save();
+      renderCards(b.dataset.g + '-' + b.dataset.c + '-' + (list.length - 1) + '-n');
+    } else if (act === 'del') {
+      var idx = +b.dataset.i, rowEl = b.closest('.row');
+      if (rowEl) rowEl.classList.add('out');
+      setTimeout(function () { list.splice(idx, 1); save(); renderCards(); }, reduce ? 0 : 220);
+    }
+  });
+  $('#tc').addEventListener('input', function (e) { S.tc = e.target.value; save(); updateTotals(); });
+
+  /* ---------- Logo propio ---------- */
+  $('#logo-file').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0], g = logoTarget;
+    if (!f || !g) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var scale = Math.min(1, 260 / img.width, 96 / img.height);
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.width * scale)); c.height = Math.max(1, Math.round(img.height * scale));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          S.logos[g] = c.toDataURL('image/png');
+          save(); renderCards(); toast('Logo de ' + group(g).name + ' actualizado.');
+        } catch (err) { toast('No se pudo usar esa imagen.'); }
+      };
+      img.onerror = function () { toast('Ese archivo no es una imagen válida.'); };
+      img.src = reader.result;
+    };
+    reader.onerror = function () { toast('No se pudo leer el archivo.'); };
+    reader.readAsDataURL(f);
+  });
+
+  /* ---------- Poner en cero ---------- */
+  function zeroAll() {
+    GROUPS.forEach(function (g) {
+      ['pen', 'usd'].forEach(function (c) {
+        S.data[g.id][c] = S.data[g.id][c].map(function (r) { return { n: r.n, v: 0 }; });
+      });
+    });
+    S.example = false;
+    save();
+    renderCards();
+  }
+  $('#start-zero').addEventListener('click', zeroAll);
+  var resetBtn = $('#reset'), armed = false, armTimer = null;
+  resetBtn.addEventListener('click', function () {
+    if (!armed) { armed = true; resetBtn.textContent = 'Toca otra vez para confirmar'; armTimer = setTimeout(disarm, 4000); return; }
+    disarm(); zeroAll();
+  });
+  function disarm() { armed = false; clearTimeout(armTimer); resetBtn.textContent = 'Poner todo en cero'; }
+
+  /* ---------- Copia de seguridad ---------- */
+  function backupText() {
+    return JSON.stringify({
+      app: 'mi-patrimonio', version: 1, savedAt: new Date().toISOString(),
+      state: { tc: S.tc, data: S.data, logos: S.logos }
+    }, null, 2);
+  }
+  function sanitize(o) {
+    var st = o && o.state ? o.state : o;
+    if (!st || typeof st !== 'object' || !st.data) throw new Error('formato');
+    var out = { tc: String(num(st.tc) > 0 ? num(st.tc) : 3.75), example: false, data: {}, logos: {}, lastBackup: S.lastBackup };
+    GROUPS.forEach(function (g) {
+      out.data[g.id] = {};
+      ['pen', 'usd'].forEach(function (c) {
+        var l = st.data[g.id] && st.data[g.id][c];
+        if (!Array.isArray(l)) throw new Error('formato');
+        out.data[g.id][c] = l.slice(0, 50).map(function (r) { return { n: String((r && r.n) || '').slice(0, 60), v: num(r && r.v) }; });
+      });
+      var lg = st.logos && st.logos[g.id];
+      if (typeof lg === 'string' && lg.length < 400000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(lg)) out.logos[g.id] = lg;
+    });
+    return out;
+  }
+  function stamp() { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function fmtDate(ms) { return new Date(ms).toLocaleString('es-PE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  function markBackup() { S.lastBackup = Date.now(); save(); paintBackup(); }
+  function paintBackup() {
+    $('#bk-last').textContent = S.lastBackup ? 'Última copia en archivo: ' + fmtDate(S.lastBackup) : 'Aún no guardas una copia en archivo.';
+  }
+
+  async function saveFile() {
+    var text = backupText(), name = 'mi-patrimonio-copia-' + stamp() + '.json', d = null;
+    try { d = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { d = null; }
+    if (d) {
+      try {
+        var r = await d.save({ filename: name, data: text });
+        markBackup();
+        toast(r && r.status === 'delivered' ? 'Copia enviada.' : 'Copia guardada en tu equipo.');
+      } catch (err) {
+        if (err && err.code === 'declined') toast('Cancelaste el guardado.');
+        else toast('No se pudo guardar el archivo. Prueba con "Copiar copia".');
+      }
+      return;
+    }
+    try {
+      var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      var a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      markBackup(); toast('Copia descargada.');
+    } catch (e2) { toast('No se pudo descargar. Prueba con "Copiar copia".'); }
+  }
+  async function copyBackup() {
+    var text = backupText();
+    try { await navigator.clipboard.writeText(text); markBackup(); toast('Copia en el portapapeles. Pégala en un archivo de texto.'); return; } catch (e) {}
+    var box = $('#bk-text'); $('#bk-paste').open = true; box.value = text; box.focus(); box.select();
+    toast('Selecciona el texto y cópialo con Ctrl+C.');
+  }
+  function applyRestore(st, origin) {
+    addSnap('Antes de restaurar');
+    S = st; save();
+    $('#tc').value = S.tc;
+    renderCards(); paintSnaps(); paintBackup();
+    toast('Copia restaurada desde ' + origin + '. Tus datos anteriores quedaron en "Copias en este navegador".');
+  }
+  function restoreFromText(text, origin) {
+    var st;
+    try { st = sanitize(JSON.parse(text)); } catch (e) { toast('Ese contenido no es una copia válida de Mi Patrimonio.'); return; }
+    applyRestore(st, origin);
+  }
+  $('#bk-save').addEventListener('click', saveFile);
+  $('#bk-copy').addEventListener('click', copyBackup);
+  $('#bk-open').addEventListener('click', function () { $('#bk-file').value = ''; $('#bk-file').click(); });
+  $('#bk-file').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () { restoreFromText(String(rd.result), 'el archivo'); };
+    rd.onerror = function () { toast('No se pudo leer el archivo.'); };
+    rd.readAsText(f);
+  });
+  $('#bk-paste-go').addEventListener('click', function () {
+    var v = $('#bk-text').value.trim();
+    if (!v) { toast('Pega primero el texto de la copia.'); return; }
+    restoreFromText(v, 'el texto pegado');
+  });
+
+  /* copias locales (en este navegador) */
+  function loadSnaps() { try { var a = JSON.parse(localStorage.getItem(SNAPKEY)); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function storeSnaps(a) { try { localStorage.setItem(SNAPKEY, JSON.stringify(a)); return true; } catch (e) { return false; } }
+  function addSnap(label) {
+    var a = loadSnaps();
+    a.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: Date.now(), label: label || '', state: { tc: S.tc, data: S.data, logos: S.logos } });
+    return storeSnaps(a.slice(0, 8));
+  }
+  function paintSnaps() {
+    var a = loadSnaps(), ul = $('#bk-list');
+    if (!a.length) { ul.innerHTML = '<li class="bk-empty" style="background:none;padding:6px 2px">Aún no hay copias. Crea una para volver a este punto cuando quieras.</li>'; return; }
+    ul.innerHTML = a.map(function (s) {
+      var net = '';
+      try { net = fmt(totalsOf(s.state).netEq, 'pen'); } catch (e) { net = '—'; }
+      return '<li><div class="meta"><strong>' + esc(fmtDate(s.at)) + '</strong><span>Patrimonio neto ' + esc(net) + (s.label ? ' · ' + esc(s.label) : '') + '</span></div>' +
+        '<button class="mini" type="button" data-snap="restore" data-id="' + esc(s.id) + '">Restaurar</button>' +
+        '<button class="mini danger" type="button" data-snap="del" data-id="' + esc(s.id) + '">Borrar</button></li>';
+    }).join('');
+  }
+  $('#bk-snap').addEventListener('click', function () {
+    if (addSnap('')) { paintSnaps(); toast('Copia creada en este navegador.'); } else toast('No hay espacio para guardar la copia. Borra alguna anterior.');
+  });
+  $('#bk-list').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-snap]'); if (!b) return;
+    var a = loadSnaps(), s = a.filter(function (x) { return x.id === b.dataset.id; })[0];
+    if (!s) return;
+    if (b.dataset.snap === 'del') { storeSnaps(a.filter(function (x) { return x.id !== s.id; })); paintSnaps(); return; }
+    var st; try { st = sanitize(s.state); } catch (err) { toast('Esa copia está dañada.'); return; }
+    applyRestore(st, 'la copia del ' + fmtDate(s.at));
+  });
+
+  /* ---------- Inicio ---------- */
+  document.body.classList.add('intro');
+  buildStatic();
+  $('#tc').value = S.tc;
+  renderCards();
+  paintBackup();
+  paintSnaps();
+  setTimeout(function () { document.body.classList.remove('intro'); }, 2800);
+})();
+</script>
